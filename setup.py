@@ -31,7 +31,6 @@ setup(
     url="https://github.com/openspeech-team/openspeech",
     download_url="https://github.com/openspeech-team/openspeech/releases/tag/v0.4.zip",
     install_requires=[
-        "torch>=1.6.0",
         "levenshtein",
         "numpy",
         "pandas",

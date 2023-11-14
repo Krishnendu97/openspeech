@@ -34,7 +34,7 @@ from openspeech.tokenizers.tokenizer import Tokenizer
 class AIShellCharacterTokenizerConfigs(TokenizerConfigs):
     unit: str = field(default="aishell_character", metadata={"help": "Unit of vocabulary."})
     vocab_path: str = field(
-        default="../../../data_aishell/aishell_labels.csv", metadata={"help": "Path of vocabulary file."}
+        default="../../../data/data_aishell/aishell_labels.csv", metadata={"help": "Path of vocabulary file."}
     )
 
 

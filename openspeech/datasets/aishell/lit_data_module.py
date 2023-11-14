@@ -21,7 +21,7 @@
 # SOFTWARE.
 
 import logging
-import os
+from pathlib import Path
 import tarfile
 from typing import Optional, Tuple
 
@@ -61,17 +61,19 @@ class LightningAIShellDataModule(pl.LightningDataModule):
         r"""Download aishell dataset."""
         url = "https://www.openslr.org/resources/33/data_aishell.tgz"
 
-        if not os.path.exists(self.configs.dataset.dataset_path):
-            os.mkdir(self.configs.dataset.dataset_path)
+        # create folder
+        dataset_folder = Path(self.configs.dataset.dataset_path)
+        dataset_folder.mkdir(exist_ok=True)
 
-        wget.download(url, f"{self.configs.dataset.dataset_path}/data_aishell.tgz")
+        # download
+        dataset_archive = Path(self.configs.dataset.dataset_path) / 'data_aishell.tgz'
+        wget.download(dataset_archive)
 
-        self.logger.info(f"Un-tarring archive {self.configs.dataset.dataset_path}/data_aishell.tgz")
-        tar = tarfile.open(f"{self.configs.dataset.dataset_path}/data_aishell.tgz", mode="r:gz")
+        self.logger.info(f"Un-tarring archive {dataset_archive}")
+        tar = tarfile.open(dataset_archive, mode="r:gz")
         tar.extractall(self.configs.dataset.dataset_path)
         tar.close()
-        os.remove(f"{self.configs.dataset.dataset_path}/data_aishell.tgz")
-        self.configs.dataset.dataset_path = os.path.join(self.configs.dataset.dataset_path, "data_aishell")
+        dataset_archive.unlink()
 
     def _generate_manifest_files(self, manifest_file_path: str) -> None:
         generate_character_labels(
@@ -89,7 +91,7 @@ class LightningAIShellDataModule(pl.LightningDataModule):
         audio_paths = list()
         transcripts = list()
 
-        with open(manifest_file_path) as f:
+        with open(manifest_file_path, encoding="UTF-8") as f:
             for idx, line in enumerate(f.readlines()):
                 audio_path, _, transcript = line.split("\t")
                 transcript = transcript.replace("\n", "")
@@ -109,10 +111,12 @@ class LightningAIShellDataModule(pl.LightningDataModule):
         if self.configs.dataset.dataset_download:
             self._download_dataset()
 
-        if not os.path.exists(self.configs.dataset.manifest_file_path):
+        self.configs.dataset.dataset_path = Path(self.configs.dataset.dataset_path) / "data_aishell"
+
+        if not Path(self.configs.dataset.manifest_file_path).exists():
             self.logger.info("Manifest file is not exists !!\n" "Generate manifest files..")
-            if not os.path.exists(self.configs.dataset.dataset_path):
-                raise ValueError("Dataset path is not valid.")
+            if not Path(self.configs.dataset.dataset_path).exists():
+                raise ValueError(f"Dataset path {self.configs.dataset.dataset_path} is not valid.")
             self._generate_manifest_files(self.configs.dataset.manifest_file_path)
 
     def setup(self, stage: Optional[str] = None) -> None:

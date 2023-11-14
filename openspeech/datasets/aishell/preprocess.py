@@ -20,8 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import glob
-import os
+from pathlib import Path
 import tarfile
 
 import pandas as pd
@@ -50,7 +49,7 @@ def read_transcripts(dataset_path):
     """
     transcripts_dict = dict()
 
-    with open(os.path.join(dataset_path, "transcript/aishell_transcript_v0.8.txt")) as f:
+    with open(Path(dataset_path, "transcript", "aishell_transcript_v0.8.txt"), encoding='utf-8') as f:
         for line in f.readlines():
             tokens = line.split()
             audio_path = tokens[0]
@@ -74,13 +73,13 @@ def sentence_to_target(sentence, char2id):
 
 def get_key(audio_file):
     """Given an audio file path, return its ID."""
-    return os.path.basename(audio_file)[:-4]
+    return Path(audio_file).stem
 
 
 def generate_character_labels(dataset_path, vocab_path):
     transcripts, label_list, label_freq = list(), list(), list()
 
-    with open(os.path.join(dataset_path, "transcript/aishell_transcript_v0.8.txt")) as f:
+    with Path(dataset_path, "transcript", "aishell_transcript_v0.8.txt").open(encoding='utf-8') as f:
         for line in f.readlines():
             tokens = line.split(" ")
             transcript = " ".join(tokens[1:])
@@ -112,20 +111,19 @@ def generate_character_labels(dataset_path, vocab_path):
 
 
 def generate_character_script(dataset_path: str, manifest_file_path: str, vocab_path: str):
-    tarfiles = glob.glob(os.path.join(dataset_path, f"wav/*.tar.gz"))
+    tarfiles = Path(dataset_path).glob("wav/*.tar.gz")
 
     char2id, id2char = load_label(vocab_path)
     transcripts_dict = read_transcripts(dataset_path)
 
     for f in tarfiles:
-        tar = tarfile.open(f, mode="r:gz")
-        tar.extractall(os.path.join(dataset_path, "wav"))
-        tar.close()
-        os.remove(f)
+        with tarfile.open(f, mode="r:gz") as tar:
+            tar.extractall(Path(dataset_path) / "wav")
+        f.unlink()
 
-    with open(manifest_file_path, "w") as f:
+    with open(manifest_file_path, "w", encoding='utf-8') as f:
         for split in ("train", "dev", "test"):
-            audio_paths = glob.glob(os.path.join(dataset_path, f"wav/{split}/*/*.wav"))
+            audio_paths = Path(dataset_path).glob(f"wav/{split}/*/*.wav")
             keys = [audio_path for audio_path in audio_paths if get_key(audio_path) in transcripts_dict]
 
             transcripts = [transcripts_dict[get_key(key)] for key in keys]
